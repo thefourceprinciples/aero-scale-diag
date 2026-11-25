@@ -122,7 +122,7 @@ def classify_regime(
     grid_sensitive: bool = False,
 ) -> dict:
     """Evaluates field observables alongside surface/load channels (S1, S2, S3)."""
-    mpp_elevated = obs["T_M"] > max(baseline_tm * 2.5, 0.08)
+    mpp_elevated = obs["T_M"] > max(baseline_tm * 5.0, 0.01)
 
     if mpp_elevated and grid_sensitive:
         label = "NUMERICAL_CONTAMINATION"
