@@ -3,6 +3,8 @@
 **Dyadic scale-redistribution diagnostics for detecting flow separation, buffet onset, and numerical aliasing in CFD velocity fields.**
 
 ## Overview
+![NACA 0012 Alpha Sweep Benchmark](naca0012_benchmark.png)
+
 Conventional aerodynamic monitoring relies on integrated surface loads ($C_L, C_D, C_m$) and wall skin friction ($C_f$). While reliable after separation is established, integrated loads often lag behind internal shear-layer destabilization and can be confounded by sensor drift or under-resolved mesh aliasing.
 
 `aero-scale-diag` computes dimensionless, dyadic frequency-band norms ($L^3$-critical scale norms normalized by chord Reynolds number $Re_c$) inside declared boundary-layer ($\Omega_{\text{BL}}$) and near-wake ($\Omega_{\text{wake}}$) windows to track how flow organization shifts toward finer spatial scales.
