@@ -1,5 +1,8 @@
 # aero-scale-diag
-[![Open In Colab](https://google.com)](https://google.com)
+[![Open In Colab](https://google.com)](https://google.com) 
+
+![NACA 0012 Alpha Sweep Benchmark](naca0012_benchmark.png)
+
 
 **Dyadic scale-redistribution diagnostics for detecting flow separation, buffet onset, and numerical aliasing in CFD velocity fields.**
 
