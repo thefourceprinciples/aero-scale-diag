@@ -1,7 +1,8 @@
 # aero-scale-diag
-[![Open In Colab](https://google.com)](https://google.com) 
-
+ 
 ![2D Navier-Stokes Wake Transition](ns_wake_validation.png)
+
+[![Open In Colab](https://google.com)](https://google.com)
 
 **Dyadic scale-redistribution diagnostics for detecting flow separation, buffet onset, and numerical aliasing in CFD velocity fields.**
 
