@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aero-Scale-Diag — CFD Boundary-Layer &amp; Scale-Ratio Workbench</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #07100c; color: #e6f2ec; font-family: system-ui, sans-serif; padding: 24px; }
+    .wrap { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #244736; padding-bottom: 12px; }
+    h1 { font-size: 1.25rem; color: #34d399; font-family: ui-monospace, monospace; letter-spacing: 0.06em; }
+    .grid { display: grid; grid-template-columns: 320px 1fr; gap: 16px; }
+    .panel { background: #0d1b15; border: 1px solid #244736; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    label { font-size: 0.78rem; font-family: ui-monospace, monospace; color: #94a3b8; display: flex; justify-content: space-between; }
+    input[type=range] { width: 100%; accent-color: #34d399; }
+    canvas { width: 100%; height: 240px; background: #050b08; border: 1px solid #244736; border-radius: 8px; }
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .card { background: #07100c; border: 1px solid #244736; border-radius: 8px; padding: 10px; font-family: ui-monospace, monospace; }
+    .card span { font-size: 0.72rem; color: #94a3b8; display: block; }
+    .card strong { font-size: 1.05rem; color: #34d399; }
+    .alert { padding: 10px 12px; border-radius: 8px; font-family: ui-monospace, monospace; font-size: 0.82rem; }
+    .ok { background: rgba(52,211,153,0.12); border: 1px solid #34d399; color: #6ee7b7; }
+    .warn { background: rgba(245,158,11,0.14); border: 1px solid #f59e0b; color: #fcd34d; }
+    .crit { background: rgba(244,63,94,0.14); border: 1px solid #f43f5e; color: #fda4af; }
+    a { color: #34d399; text-decoration: none; font-family: ui-monospace, monospace; font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>AERO-SCALE-DIAG // CFD TURBULENCE &amp; GRID DIAGNOSTIC</h1>
+      <a href="https://github.io">← Return to Lumen</a>
+    </header>
+    <div class="grid">
+      <div class="panel">
+        <label><span>Reynolds Number (Re)</span><strong id="lbl-re">1.2e6</strong></label>
+        <input type="range" id="re" min="4.0" max="7.2" step="0.1" value="6.1" oninput="runDiag()" />
+        <label><span>Grid Cell Spacing Δx (mm)</span><strong id="lbl-dx">1.8 mm</strong></label>
+        <input type="range" id="dx" min="0.2" max="8.0" step="0.1" value="1.8" oninput="runDiag()" />
+        <label><span>Angle of Attack α (deg)</span><strong id="lbl-aoa">11°</strong></label>
+        <input type="range" id="aoa" min="0" max="24" step="0.5" value="11" oninput="runDiag()" />
+        <label><span>Adverse Pressure Gradient</span><strong id="lbl-apg">0.45</strong></label>
+        <input type="range" id="apg" min="0.05" max="1.0" step="0.05" value="0.45" oninput="runDiag()" />
+      </div>
+      <div class="panel">
+        <canvas id="wake-canvas" width="600" height="240"></canvas>
+        <div class="metrics">
+          <div class="card"><span>Kolmogorov η (μm)</span><strong id="m-eta">—</strong></div>
+          <div class="card"><span>Scale Ratio (Δx / η)</span><strong id="m-ratio">—</strong></div>
+          <div class="card"><span>Phase Cost (λ)</span><strong id="m-lam">—</strong></div>
+        </div>
+        <div id="verdict" class="alert ok">BOUNDARY LAYER RESOLVED</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    function runDiag() {
+      const reExp = parseFloat(document.getElementById('re').value);
+      const Re = Math.pow(10, reExp);
+      const dxMm = parseFloat(document.getElementById('dx').value);
+      const aoa = parseFloat(document.getElementById('aoa').value);
+      const apg = parseFloat(document.getElementById('apg').value);
+
+      document.getElementById('lbl-re').textContent = Re.toExponential(1);
+      document.getElementById('lbl-dx').textContent = dxMm.toFixed(1) + ' mm';
+      document.getElementById('lbl-aoa').textContent = aoa.toFixed(1) + '°';
+      document.getElementById('lbl-apg').textContent = apg.toFixed(2);
+
+      const etaMm = 280 * Math.pow(Re, -0.75);
+      const ratio = dxMm / etaMm;
+      const sepIndex = (aoa / 16) * 0.55 + apg * 0.45;
+      const lambda = Math.min(0.99, (ratio / 120) * 0.5 + sepIndex * 0.5);
+
+      document.getElementById('m-eta').textContent = (etaMm * 1000).toFixed(1) + ' μm';
+      document.getElementById('m-ratio').textContent = ratio.toFixed(1) + '×';
+      document.getElementById('m-lam').textContent = lambda.toFixed(3);
+
+      const v = document.getElementById('verdict');
+      if (sepIndex > 0.72 || ratio > 95) {
+        v.className = 'alert crit';
+        v.textContent = 'CRITICAL: Boundary-layer separation & sub-grid aliasing detected (refine Δx or reduce α).';
+      } else if (sepIndex > 0.48 || ratio > 45) {
+        v.className = 'alert warn';
+        v.textContent = 'WARNING: Transitional wake vortex shedding — moderate sub-grid dissipation.';
+      } else {
+        v.className = 'alert ok';
+        v.textContent = 'PASS: Attached laminar/turbulent boundary layer within scale resolution.';
+      }
+
+      const canvas = document.getElementById('wake-canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw airfoil
+      ctx.strokeStyle = '#34d399';
+      ctx.lineWidth = 2;
+      ctx.save();
+      ctx.translate(150, 120);
+      ctx.rotate((aoa * Math.PI) / 180);
+      ctx.beginPath();
+      ctx.moveTo(-60, 0);
+      ctx.quadraticCurveTo(0, -24, 65, 0);
+      ctx.quadraticCurveTo(0, 12, -60, 0);
+      ctx.stroke();
+      ctx.restore();
+
+      // Draw streamlines & vortex wake
+      for (let s = -4; s <= 4; s++) {
+        ctx.beginPath();
+        ctx.strokeStyle = sepIndex > 0.72 && Math.abs(s) <= 2 ? '#f43f5e' : 'rgba(52,211,153,0.45)';
+        ctx.lineWidth = 1.4;
+        for (let x = 20; x < 580; x += 8) {
+          let y = 120 + s * 20;
+          if (x > 110 && x < 230) y += (s >= 0 ? 1 : -1) * Math.exp(-Math.pow((x - 160) / 45, 2)) * 18;
+          if (x >= 210 && Math.abs(s) <= 2) {
+            y += Math.sin((x - 210) * (0.04 + sepIndex * 0.05) + s) * (sepIndex * 26);
+          }
+          if (x === 20) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    }
+    runDiag();
+  </script>
+</body>
+</html>
